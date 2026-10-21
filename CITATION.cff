@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "medwear-benchmark: benchmark harness for MEDWEAR and RADAR-base"
+type: software
+version: 1.0.0
+date-released: 2026-10-21
+license: MIT
+repository-code: "https://github.com/SCAI-Lab/medwear-benchmark"
+keywords:
+  - wearable sensors
+  - data platform
+  - benchmark
+  - MEDWEAR
+  - RADAR-base
+authors:
+  - family-names: Perez-Serrano
+    given-names: Monica
+    affiliation: "SCAI Lab, D-HEST, ETH Zürich"
+  - family-names: Özer
+    given-names: Hümay Zehra
+    affiliation: "SCAI Lab, D-HEST, ETH Zürich"
+  - family-names: Paek
+    given-names: Seung Ju
+    affiliation: "University of Zurich"
+  - family-names: Paez-Granados
+    given-names: Diego
+    affiliation: "SCAI Lab, D-HEST, ETH Zürich"
+preferred-citation:
+  type: article
+  title: "Connected but Late: Sample Age of Commercial BLE Wearables under Wi-Fi Coexistence"
+  status: submitted
+  journal: "IEEE Journal of Biomedical and Health Informatics"
+  year: 2026
+  authors:
+    - family-names: Perez-Serrano
+      given-names: Monica
+    - family-names: Özer
+      given-names: Hümay Zehra
+    - family-names: Paek
+      given-names: Seung Ju
+    - family-names: Paez-Granados
+      given-names: Diego

@@ -1,0 +1,39 @@
+# campaign bench/campaigns/paper_round4.tsv sha256=0e4890c28eecba67
+# exclusion rules sha256=07dcf637151671cb
+# seed=20261020 (randomised blocks)
+order	job_id	job	condition	rep
+1	13709	idempotency	conditions/medwear_default_open.env	1
+2	13710	idempotency	conditions/radar_default_open.env	1
+3	13711	durability	conditions/medwear_default_open.env	1
+4	13712	load	conditions/radar_default_open.env	1
+5	13713	latency	conditions/radar_default_open.env	1
+6	13714	validation	conditions/radar_default_open.env	1
+7	13715	load	conditions/medwear_default_open.env	1
+8	13716	durability	conditions/radar_default_open.env	1
+9	13717	load	conditions/medwear_default_closed.env	1
+10	13718	validation	conditions/medwear_default_open.env	1
+11	13719	load	conditions/radar_default_closed.env	1
+12	13720	load	conditions/medwear_ratelimit_open.env	1
+13	13721	latency	conditions/medwear_default_open.env	1
+14	13722	load	conditions/radar_default_open.env	2
+15	13723	validation	conditions/radar_default_open.env	2
+16	13724	load	conditions/medwear_default_open.env	2
+17	13725	latency	conditions/medwear_default_open.env	2
+18	13726	load	conditions/medwear_default_closed.env	2
+19	13727	validation	conditions/medwear_default_open.env	2
+20	13728	load	conditions/radar_default_closed.env	2
+21	13729	load	conditions/medwear_ratelimit_open.env	2
+22	13730	idempotency	conditions/medwear_default_open.env	2
+23	13731	latency	conditions/radar_default_open.env	2
+24	13732	idempotency	conditions/radar_default_open.env	2
+25	13733	validation	conditions/radar_default_open.env	3
+26	13734	idempotency	conditions/radar_default_open.env	3
+27	13735	latency	conditions/radar_default_open.env	3
+28	13736	load	conditions/medwear_ratelimit_open.env	3
+29	13737	load	conditions/medwear_default_open.env	3
+30	13738	validation	conditions/medwear_default_open.env	3
+31	13739	latency	conditions/medwear_default_open.env	3
+32	13740	idempotency	conditions/medwear_default_open.env	3
+33	13741	load	conditions/radar_default_open.env	3
+34	13742	load	conditions/radar_default_closed.env	3
+35	13743	load	conditions/medwear_default_closed.env	3

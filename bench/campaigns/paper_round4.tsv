@@ -1,0 +1,18 @@
+# job	condition	repetitions
+# Randomised blocks (campaign.sh, CAMPAIGN_SEED). n >= 3 per condition.
+# Edit only before the campaign starts (the file hash is recorded).
+# PRIMARY comparison: *_default_open (both as deployed; MEDWEAR commit a8a666b).
+# Secondary: medwear_ratelimit_open (BATCH_RATE_LIMIT raised), *_default_closed (closed loop).
+latency	conditions/medwear_default_open.env	3
+latency	conditions/radar_default_open.env	3
+load	conditions/medwear_default_open.env	3
+load	conditions/radar_default_open.env	3
+load	conditions/medwear_ratelimit_open.env	3
+load	conditions/medwear_default_closed.env	3
+load	conditions/radar_default_closed.env	3
+validation	conditions/medwear_default_open.env	3
+validation	conditions/radar_default_open.env	3
+idempotency	conditions/medwear_default_open.env	3
+idempotency	conditions/radar_default_open.env	3
+durability	conditions/medwear_default_open.env	1
+durability	conditions/radar_default_open.env	1

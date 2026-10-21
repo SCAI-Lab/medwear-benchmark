@@ -1,0 +1,15 @@
+# secrets and site paths (examples are tracked)
+bench/site.env
+bench/.env.medwear-bench
+.env.benchmark
+run.env
+
+# MEDWEAR source exported per revision (see README)
+bench/medwear_src/
+
+# run outputs, except the campaign manifests
+results/*
+!results/campaigns/
+
+__pycache__/
+*.pyc

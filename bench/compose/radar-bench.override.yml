@@ -1,0 +1,44 @@
+# Override for the isolated RADAR stack (compose project "rdbench"), used with
+# radar/RADAR-Gateway/docker-compose.yml:
+#   podman-compose -p rdbench -f docker-compose.yml -f <this file> ...
+# Same host-network layout as radar/RADAR-Gateway/docker-compose.override.yml
+# (kafka 9092, zookeeper 2181, schema-registry 8081, managementportal 8082,
+# gateway 8090), without the external radar-gateway_default network.
+# Images are fully qualified (no short-name prompt in batch jobs).
+# Host networking means no other RADAR-base stack may run on the host (the job checks).
+x-podman:
+  in_pod: false
+
+services:
+  zookeeper:
+    image: docker.io/confluentinc/cp-zookeeper:${KAFKA_CONFLUENT_VERSION}
+    network_mode: host
+    environment:
+      ZOO_MY_ID: "1"
+      ZOO_STANDALONE_ENABLED: "true"
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok,srvr,stat"
+      ZOO_ADMINSERVER_ENABLED: "false"
+
+  kafka-1:
+    image: docker.io/confluentinc/cp-kafka:${KAFKA_CONFLUENT_VERSION}
+    network_mode: host
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: "localhost:2181"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092"
+
+  schema-registry:
+    image: docker.io/confluentinc/cp-schema-registry:${KAFKA_CONFLUENT_VERSION}
+    network_mode: host
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://localhost:9092"
+      SCHEMA_REGISTRY_HOST_NAME: "localhost"
+
+  managementportal:
+    image: docker.io/radarbase/management-portal:2.0.0
+    network_mode: host
+    environment:
+      SERVER_PORT: "8082"
+
+  gateway:
+    network_mode: host
