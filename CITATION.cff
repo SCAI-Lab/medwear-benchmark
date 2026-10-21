@@ -19,12 +19,7 @@ authors:
   - family-names: Özer
     given-names: Hümay Zehra
     affiliation: "SCAI Lab, D-HEST, ETH Zürich"
-  - family-names: Paek
-    given-names: Seung Ju
-    affiliation: "University of Zurich"
-  - family-names: Paez-Granados
-    given-names: Diego
-    affiliation: "SCAI Lab, D-HEST, ETH Zürich"
+
 preferred-citation:
   type: article
   title: "Connected but Late: Sample Age of Commercial BLE Wearables under Wi-Fi Coexistence"
