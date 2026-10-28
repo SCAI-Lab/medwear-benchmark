@@ -126,6 +126,9 @@ def main():
     platform = require_env("PLATFORM")
     timeout = float(require_env("BATCH_TIMEOUT"))
     adapter = get_adapter(platform, os.path.join(args.out_dir, "token_events.jsonl"))
+    # the probes corrupt header/patient/device fields, which a session batch
+    # does not carry: validation always sends full batches
+    adapter.use_sessions = False
     session = new_session()
     log = JsonlWriter(os.path.join(args.out_dir, "validation.jsonl"))
     valid = adapter.make_batch(N, "validation", hz=HZ)

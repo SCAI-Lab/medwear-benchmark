@@ -64,6 +64,8 @@ OPEN_GREENLETS = set()
 def send(user):
     kind, n, hz = random.choice(KINDS)
     payload = ADAPTER.make_batch(n, f"load-{os.getpid()}-{id(user) % 100000}", kind=kind, hz=hz)
+    if hasattr(ADAPTER, "wire"):
+        payload = ADAPTER.wire(payload)   # MEDWEAR sessions: registered once, before the measured request
     headers = {"Content-Type": ADAPTER.content_type, "Authorization": "Bearer " + ADAPTER.tokens.get()}
     STATE["inflight"] += 1
     t_wall = time.time()

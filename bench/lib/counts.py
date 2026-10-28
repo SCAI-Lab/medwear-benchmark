@@ -5,6 +5,9 @@ Stored-data counts for delivery checks. Counts only, never row contents.
 MEDWEAR (benchmark project DB + benchmark bucket of the isolated mwbench stack):
   pg_batches     SELECT count(*)                         FROM measurement_batch WHERE NOT is_deleted
   pg_samples     SELECT coalesce(sum(sample_count), 0)   (same rows)
+                 Only rows with ingest_status 'complete' (MEDWEAR versions with
+                 two-phase ingest; older schemas have no such column and every
+                 row counts). pg_pending_batches: rows still waiting for InfluxDB.
   influx_points  count() of field "value" over the whole benchmark bucket
                  (one point per sample). Not filtered by project_id: when a
                  batch has a missing/unknown project the API stores it in the
@@ -53,13 +56,19 @@ def medwear_counts(project):
     _guard_project(project)
     out, errors = {"project": project}, []
     pg = container_for(MW_PROJECT, "postgres")
-    sql = "SELECT count(*), coalesce(sum(sample_count),0) FROM measurement_batch WHERE NOT is_deleted"
+    # to_jsonb(m)->>'ingest_status' is NULL on schemas without the column
+    complete = "coalesce(to_jsonb(m)->>'ingest_status', 'complete') = 'complete'"
+    sql = (f"SELECT count(*) FILTER (WHERE {complete}), "
+           f"coalesce(sum(sample_count) FILTER (WHERE {complete}), 0), "
+           f"count(*) FILTER (WHERE to_jsonb(m)->>'ingest_status' = 'pending') "
+           f"FROM measurement_batch m WHERE NOT is_deleted")
     r = run(["podman", "exec", "-e", "BENCH_PROJECT", "-e", f"Q={sql}", pg, "sh", "-c",
              'psql -U "$POSTGRES_USER" -d "$BENCH_PROJECT" -At -F, -v ON_ERROR_STOP=1 -c "$Q"'],
             env_extra={"BENCH_PROJECT": project})
-    m = re.fullmatch(r"(\d+),(\d+)", r.stdout.strip())
+    m = re.fullmatch(r"(\d+),(\d+),(\d+)", r.stdout.strip())
     if r.returncode == 0 and m:
         out["pg_batches"], out["pg_samples"] = int(m.group(1)), int(m.group(2))
+        out["pg_pending_batches"] = int(m.group(3))
     else:
         errors.append(f"pg: rc={r.returncode} {r.stderr.strip()[:200]}")
     try:

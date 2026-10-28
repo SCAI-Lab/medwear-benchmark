@@ -143,6 +143,55 @@ class Medwear:
         self.url = self.base + self.path
         self.health_url = self.base + "/v1/health"
         self.tokens = TokenManager(self._fetch_token, token_log)
+        # MEDWEAR_SESSIONS=1 (MEDWEAR with POST /v1/data/session): stream
+        # metadata is registered once per simulated device and signal; batches
+        # then carry only session_id, their uuid and the body. Registration
+        # happens before the measured request and is logged to sessions.jsonl.
+        self.use_sessions = os.environ.get("MEDWEAR_SESSIONS") == "1"
+        self._sessions = {}
+        self._sessions_lock = threading.Lock()
+        self._session_log = JsonlWriter(
+            os.path.join(os.path.dirname(token_log), "sessions.jsonl") if token_log else None)
+
+    def wire(self, payload):
+        """Request body for a make_batch() payload."""
+        if not self.use_sessions or not isinstance(payload, dict) or "header" not in payload:
+            return payload
+        h = payload["header"]
+        key = (payload["patient_id"], payload["device_id"], payload["signal_type"], h["schema_id"],
+               h["acquisition_rate"]["value"], payload["body"]["unit"])
+        with self._sessions_lock:
+            sid = self._sessions.get(key)
+            if sid is None:
+                sid = self._register_session(key, h)
+                if sid is None:
+                    return payload   # registration failed: full batch, nothing lost
+                self._sessions[key] = sid
+        return {"session_id": sid, "project_id": self.project, "uuid": h["uuid"], "body": payload["body"]}
+
+    def _register_session(self, key, header):
+        reg = {"session_id": str(uuid.uuid4()), "patient_id": key[0], "device_id": key[1],
+               "signal_type": key[2], "unit": key[5], "project_id": self.project,
+               "header": {"schema_id": key[3], "acquisition_rate": header["acquisition_rate"]}}
+        s = new_session()
+        for attempt in range(1, 6):
+            t0 = time.perf_counter()
+            status, err = 0, None
+            try:
+                r = s.post(self.base + "/v1/data/session", json=reg, timeout=30,
+                           headers={"Authorization": "Bearer " + self.tokens.get()})
+                status = r.status_code
+            except requests.RequestException as exc:
+                err = type(exc).__name__
+            self._session_log.write({"ts": time.time(), "session_id": reg["session_id"], "device_id": key[1],
+                                     "signal_type": key[2], "attempt": attempt, "status": status, "error": err,
+                                     "latency_ms": round((time.perf_counter() - t0) * 1000, 2)})
+            if status == 200:
+                return reg["session_id"]
+            if status == 401:
+                self.tokens.refresh("on_401")
+            time.sleep(min(2 ** attempt, 10))
+        return None
 
     def _fetch_token(self):
         data = {"grant_type": "password", "client_id": require_env("KC_CLIENT"),
@@ -253,7 +302,10 @@ def post(adapter, session, payload=None, *, timeout, raw_body=None, headers=None
             h.pop(k, None)
         else:
             h[k] = v
-    body = raw_body if raw_body is not None else json.dumps(payload)
+    if raw_body is None and hasattr(adapter, "wire"):
+        body = json.dumps(adapter.wire(payload))   # session registration, if any, happens here, before t0
+    else:
+        body = raw_body if raw_body is not None else json.dumps(payload)
     samples = adapter.samples_in(payload) if isinstance(payload, dict) else 0
     t_wall = time.time()
     t0 = time.perf_counter()
