@@ -1,0 +1,162 @@
+# Isolated MEDWEAR stack for benchmark jobs (compose project "mwbench").
+# Created and destroyed inside each Slurm job by bench/lib/common.sh; the named
+# volumes are per job and only ever hold synthetic benchmark data.
+#
+# MEDWEAR code from bench/medwear_src/${MEDWEAR_SRC_REV} (a git archive of one commit, see its
+# VERSION file); images are tagged with that commit. Service configuration as
+# docker-compose.medwear-minimal.yml,
+# reduced to the ingest path (no grafana/dagster/pgadmin/analytics/uptime-kuma).
+# Differences that matter for the benchmark:
+#   * DB_POOL_SIZE and UVICORN_WORKERS are set at container start
+#   * uvicorn is started via the CLI so --workers can be set; with
+#     UVICORN_WORKERS=1 this is the same single process as run_med_api.py
+#   * MEDWEAR is measured as deployed: HTTPS through nginx (127.0.0.1:${MW_BENCH_TLS_PORT};
+#     port ${MW_BENCH_PORT} only redirects). The API is also published on
+#     127.0.0.1:${MW_BENCH_API_PORT} so the latency test can measure the nginx+TLS hop
+#     separately. Keycloak on 127.0.0.1:${MW_BENCH_KC_PORT}; stores stay private
+#   * hostnames the API/nginx expect (medwear-postgres, medwear-api, ...) are
+#     network aliases on the private network, so no other MEDWEAR stack is touched
+version: "3.8"
+
+services:
+  postgres:
+    image: docker.io/library/postgres:15-alpine
+    container_name: mwbench-postgres
+    env_file:
+      - ../.env.medwear-bench
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      mwbench:
+        aliases: [medwear-postgres]
+
+  influxdb:
+    image: docker.io/library/influxdb:2.7
+    container_name: mwbench-influxdb
+    env_file:
+      - ../.env.medwear-bench
+    volumes:
+      - influx_data:/var/lib/influxdb2
+      - influx_config:/etc/influxdb2
+    networks:
+      mwbench:
+        aliases: [medwear-influxdb]
+
+  minio:
+    image: docker.io/minio/minio:latest
+    container_name: mwbench-minio
+    env_file:
+      - ../.env.medwear-bench
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      mwbench:
+        aliases: [medwear-minio]
+
+  minio-setup:
+    image: docker.io/minio/mc:latest
+    container_name: mwbench-minio-setup
+    env_file:
+      - ../.env.medwear-bench
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+      mc mb myminio/medwear-lakehouse --ignore-existing;
+      mc mb myminio/medwear-bronze --ignore-existing;
+      mc mb myminio/medwear-silver --ignore-existing;
+      mc mb myminio/medwear-gold --ignore-existing;
+      mc anonymous set none myminio/medwear-bronze;
+      mc admin user add myminio $$MINIO_API_ACCESS_KEY $$MINIO_API_SECRET_KEY || true;
+      printf '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"s3:DeleteObject\",\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::medwear-bronze\",\"arn:aws:s3:::medwear-bronze/*\",\"arn:aws:s3:::medwear-lakehouse\",\"arn:aws:s3:::medwear-lakehouse/*\",\"arn:aws:s3:::medwear-silver\",\"arn:aws:s3:::medwear-silver/*\",\"arn:aws:s3:::medwear-gold\",\"arn:aws:s3:::medwear-gold/*\"]}]}' > /tmp/p.json;
+      mc admin policy create myminio medwear-api-policy /tmp/p.json || true;
+      mc admin policy attach myminio medwear-api-policy --user $$MINIO_API_ACCESS_KEY || true;
+      "
+    networks: [mwbench]
+
+  keycloak:
+    image: docker.io/keycloak/keycloak:23.0
+    container_name: mwbench-keycloak
+    env_file:
+      - ../.env.medwear-bench
+    command: start --import-realm
+    volumes:
+      - ${MEDWEAR_SRC}/docker/medwear-realm.json:/opt/keycloak/data/import/medwear-realm.json
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://medwear-postgres:5432/keycloak
+      - KC_DB_POOL_MAX_SIZE=20
+      - KC_DB_POOL_MIN_SIZE=5
+      - KC_PROXY=edge
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME=medwear-keycloak
+      - KC_HOSTNAME_PORT=8080
+    ports:
+      - "127.0.0.1:${MW_BENCH_KC_PORT}:8080"
+    networks:
+      mwbench:
+        aliases: [medwear-keycloak]
+
+  med-api:
+    image: localhost/mwbench-api:${MEDWEAR_SRC_REV}
+    build:
+      context: ${MEDWEAR_SRC}
+      dockerfile: docker/medwear-api.Dockerfile
+    container_name: mwbench-api
+    env_file:
+      - ../.env.medwear-bench
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+      # DB_POOL_SIZE is recorded but not read by MEDWEAR 49be39f (default pool);
+      # the pool actually used is read back inside the container
+      - DB_POOL_SIZE=${DB_POOL_SIZE}
+      - UVICORN_WORKERS=${UVICORN_WORKERS}
+      # per-user limit on POST /v1/data/batch; "300/minute" is the deployed default
+      - BATCH_RATE_LIMIT=${BATCH_RATE_LIMIT}
+    command: ["sh", "-c", "exec python -m uvicorn run_med_api:app --app-dir /app/medwear_med_api/scripts --host 0.0.0.0 --port 8080 --workers \"$$UVICORN_WORKERS\""]
+    volumes:
+      - ${MEDWEAR_SRC}/medwear_med_api:/app/medwear_med_api
+    # direct port for the per-hop latency comparison only (nginx+TLS vs API)
+    ports:
+      - "127.0.0.1:${MW_BENCH_API_PORT}:8080"
+    networks:
+      mwbench:
+        aliases: [medwear-api, med-api]
+
+  frontend:
+    image: localhost/mwbench-frontend:${MEDWEAR_SRC_REV}
+    build:
+      context: ${MEDWEAR_SRC}/frontend
+    container_name: mwbench-frontend
+    networks:
+      mwbench:
+        aliases: [medwear-frontend]
+
+  medwear-nginx:
+    image: localhost/mwbench-nginx:${MEDWEAR_SRC_REV}
+    build:
+      context: ${MEDWEAR_SRC}/docker/nginx
+      args:
+        SERVER_HOST: localhost
+        SERVER_IP: 127.0.0.1
+    container_name: mwbench-nginx
+    ports:
+      - "127.0.0.1:${MW_BENCH_PORT}:80"
+      - "127.0.0.1:${MW_BENCH_TLS_PORT}:443"
+    networks:
+      mwbench:
+        aliases: [medwear-nginx]
+
+networks:
+  mwbench: {}
+
+volumes:
+  pg_data:
+  influx_data:
+  influx_config:
+  minio_data:

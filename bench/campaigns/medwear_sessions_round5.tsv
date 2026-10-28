@@ -1,0 +1,9 @@
+# job	condition	repetitions
+# MEDWEAR 49be39f (two-phase ingest, sessions). Randomised blocks (campaign.sh, CAMPAIGN_SEED).
+latency	conditions/medwear_sessions_default_open.env	3
+load	conditions/medwear_sessions_default_open.env	3
+load	conditions/medwear_sessions_ratelimit_open.env	3
+load	conditions/medwear_sessions_default_closed.env	3
+validation	conditions/medwear_sessions_default_open.env	3
+idempotency	conditions/medwear_sessions_default_open.env	3
+durability	conditions/medwear_sessions_default_open.env	1

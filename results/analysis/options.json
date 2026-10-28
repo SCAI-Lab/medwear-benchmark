@@ -1,0 +1,6 @@
+{
+  "ramp_cut": "spawn",
+  "include_smoke": false,
+  "aggregation": "per-run summary, then median/min/max over runs (rule 8)",
+  "pooling": "only runs with identical harness hash (rule 7)"
+}
