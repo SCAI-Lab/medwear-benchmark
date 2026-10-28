@@ -12,7 +12,7 @@ How the benchmark was set up for the paper campaign, and how to reproduce it. Bo
 | Scheduler | Slurm 22.05 |
 | Containers | rootless Podman 5.8.2 (crun, overlay), podman-compose 1.6.0 |
 | Client | Python 3.9.21, requests 2.32.5, Locust 2.31.8, on the same node, over 127.0.0.1 |
-| MEDWEAR | tag [`paper-v2`](https://github.com/SCAI-Lab/medwear/tree/paper-v2) (`a8a666b`); PostgreSQL 15 (alpine), InfluxDB 2.7, Keycloak 23.0, MinIO, nginx; one uvicorn worker, SQLAlchemy pool 5 + 10 |
+| MEDWEAR | commit `49be39f` (first campaign: tag [`paper-v2`](https://github.com/SCAI-Lab/medwear/tree/paper-v2), `a8a666b`); PostgreSQL 15 (alpine), InfluxDB 2.7, Keycloak 23.0, MinIO, nginx; one uvicorn worker, SQLAlchemy pool 5 + 10 |
 | RADAR-base | [RADAR-Gateway](https://github.com/RADAR-base/RADAR-Gateway) `cd0c6df` (release 0.9.4) with `bench/radar/RADAR-Gateway-cd0c6df.patch`; ManagementPortal 2.0.0; Confluent Platform 7.6.0 (one Kafka broker, replication factor 1, three-partition topic, ZooKeeper, Schema Registry) |
 
 MEDWEAR is reached through its nginx proxy over HTTPS and RADAR-base at its gateway over HTTP, as each is deployed.
@@ -24,7 +24,7 @@ The scripts take the repository root as `BENCH` (the parent of `bench/`) and wri
 ```
 <repo>/
   bench/                         this harness
-  bench/medwear_src/a8a666b/     MEDWEAR source (step 3)
+  bench/medwear_src/49be39f/     MEDWEAR source (step 3)
   radar/RADAR-Gateway/           RADAR-Gateway source (step 4)
   .env.benchmark                 RADAR-base client credentials (step 5)
   results/                       run output
@@ -39,7 +39,7 @@ The scripts take the repository root as `BENCH` (the parent of `bench/`) and wri
 3. **MEDWEAR source.** Export the benchmarked commit into `bench/medwear_src/<rev>/`, where `<rev>` is `MEDWEAR_SRC_REV` in the condition files:
    ```bash
    mkdir -p bench/medwear_src
-   git -C /path/to/medwear archive --prefix=a8a666b/ paper-v2 \
+   git -C /path/to/medwear archive --prefix=49be39f/ 49be39f \
        medwear_med_api docker/medwear-api.Dockerfile docker/nginx docker/medwear-realm.json frontend \
      | tar -x -C bench/medwear_src
    ```
@@ -70,14 +70,15 @@ The scripts take the repository root as `BENCH` (the parent of `bench/`) and wri
 
 7. **Smoke runs.** One short job per platform checks the whole chain:
    ```bash
-   bench/submit.sh smoke conditions/smoke_medwear.env
+   bench/submit.sh smoke conditions/smoke_medwear_sessions.env
    bench/submit.sh smoke conditions/smoke_radar.env
    ```
    The summary at the end of `results/slurm/medwear_radar_bench_<jobid>.out` (also `summary.txt` in the run folder) should report every container inside the job, a health-check median below 100 ms, `sent=acked=stored` for every delivery check, and all acceptance checks passed.
 
 8. **Campaign.** `bench/EXCLUSION_RULES.md` must be marked `RULES FINAL: yes` before the campaign starts. Then:
    ```bash
-   CAMPAIGN_SEED=20261020 bench/campaign.sh campaigns/paper_round4.tsv
+   CAMPAIGN_SEED=20261020 bench/campaign.sh campaigns/paper_round4.tsv            # RADAR-base rows of the paper
+   CAMPAIGN_SEED=20261023 bench/campaign.sh campaigns/medwear_sessions_round5.tsv # MEDWEAR rows of the paper
    ```
    submits every condition once per block, shuffled with the seed, chained so that one job runs at a time; `bench/launch_after_smoke.sh <smoke job ids>` starts it only if both smoke runs passed. The manifest (job ids, order, seed, hashes) goes to `results/campaigns/`.
 
@@ -85,7 +86,7 @@ The scripts take the repository root as `BENCH` (the parent of `bench/`) and wri
    ```bash
    python3 bench/analysis/summarize.py --results results --out results/analysis/paper_round4
    ```
-   applies the exclusion rules and writes `runs.csv`, `aggregate.csv`, and `exclusions.csv`.
+   applies the exclusion rules and writes `runs.csv`, `aggregate.csv`, and `exclusions.csv` (run it per campaign). The paper's tables come from `bench/analysis/paper_tables.py`; see [results/paper](results/paper/README.md) for the command.
 
 ## Per-job checks
 

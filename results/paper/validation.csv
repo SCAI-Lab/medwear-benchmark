@@ -1,0 +1,33 @@
+probe,defect,description,platform,http_status,stored,n_jobs,jobs_agreeing
+V00,valid,valid request (positive control),medwear,200,yes,3,3
+V00,valid,valid request (positive control),radar,200,yes,3,3
+V01,no_auth,Authorization header missing,medwear,401,no,3,3
+V01,no_auth,Authorization header missing,radar,401,no,3,3
+V02,invalid_token,Authorization: Bearer <malformed token>,medwear,401,no,3,3
+V02,invalid_token,Authorization: Bearer <malformed token>,radar,401,no,3,3
+V03,wrong_content_type,"valid body, Content-Type text/plain",medwear,200,yes,3,3
+V03,wrong_content_type,"valid body, Content-Type text/plain",radar,415,no,3,3
+V04,malformed_json,body is not JSON,medwear,400,no,3,3
+V04,malformed_json,body is not JSON,radar,400,no,3,3
+V05,empty_body,empty body,medwear,400,no,3,3
+V05,empty_body,empty body,radar,400,no,3,3
+V06,unknown_schema,schema identifier does not exist,medwear,200,yes,3,3
+V06,unknown_schema,schema identifier does not exist,radar,422,no,3,3
+V07,missing_timestamp,timestamp field of the data removed,medwear,400,no,3,3
+V07,missing_timestamp,timestamp field of the data removed,radar,500,no,3,3
+V08,missing_sampling_rate,sampling / acquisition rate removed,medwear,200,yes,3,3
+V08,missing_sampling_rate,sampling / acquisition rate removed,radar,,n/a,3,3
+V09,non_numeric_sample,first sample value is a string,medwear,400,no,3,3
+V09,non_numeric_sample,first sample value is a string,radar,500,no,3,3
+V10,missing_subject,subject identifier removed,medwear,400,no,3,3
+V10,missing_subject,subject identifier removed,radar,500,no,3,3
+V11,missing_project,project identifier removed,medwear,200,yes,3,3
+V11,missing_project,project identifier removed,radar,422,no,3,3
+V12,unknown_project,project / topic that does not exist,medwear,200,yes,3,3
+V12,unknown_project,project / topic that does not exist,radar,404,no,3,3
+V13,empty_samples,sample array empty,medwear,400,no,3,3
+V13,empty_samples,sample array empty,radar,200,no,3,3
+V14,time_reversed,end time before start time,medwear,400,no,3,3
+V14,time_reversed,end time before start time,radar,,n/a,3,3
+V15,rate_count_mismatch,declared rate inconsistent with sample count,medwear,400,no,3,3
+V15,rate_count_mismatch,declared rate inconsistent with sample count,radar,,n/a,3,3
