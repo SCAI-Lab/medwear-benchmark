@@ -1,0 +1,125 @@
+# Benchmark deployment of MEDWEAR: what a benchmark job changes in the core
+# stack (docker-compose.yml of the MEDWEAR tree in bench/medwear_src/${MEDWEAR_SRC_REV}).
+# Used by bench/lib/common.sh (mw_compose) as
+#   podman-compose -p mwbench -f $MEDWEAR_SRC/docker-compose.yml -f <this file> --env-file bench/.env.medwear-bench
+# with MEDWEAR_ENV_FILE and the published nginx/Keycloak ports (MEDWEAR_*_PORT,
+# loopback only) set through the core's variables. podman-compose 1.6 does not
+# interpolate values inside !override, so this file only uses !reset.
+# The stack is created and destroyed inside each Slurm job; the named volumes
+# are per job and only ever hold synthetic benchmark data.
+#
+# Every change keeps the stack as benchmarked for the paper (bench/compose/medwear-bench.yml,
+# still used for MEDWEAR trees without a core compose file such as 49be39f):
+#   * job-local container names and fully qualified images (pulled or built by
+#     bench/prepare_images.sh, tagged with the MEDWEAR commit)
+#   * reduced to the ingest path: keycloak-db-setup, Grafana, pgAdmin and Uptime
+#     Kuma are left out (the job creates the keycloak database itself)
+#   * nothing is restarted by the engine (restart: "no"), so the fault tests see
+#     MEDWEAR's own recovery, and no health checks or start-up ordering: the job
+#     starts the services one by one and waits on each
+#   * only loopback ports: MEDWEAR is measured as deployed, HTTPS through nginx
+#     (127.0.0.1:${MW_BENCH_TLS_PORT}; ${MW_BENCH_PORT} only redirects); the API is also
+#     published on 127.0.0.1:${MW_BENCH_API_PORT} so the latency test can measure the
+#     nginx+TLS hop separately; Keycloak on 127.0.0.1:${MW_BENCH_KC_PORT}; stores stay private
+#   * DB_POOL_SIZE, UVICORN_WORKERS and BATCH_RATE_LIMIT from the condition file;
+#     uvicorn is started via the CLI so --workers can be set (with
+#     UVICORN_WORKERS=1 the same single process as run_med_api.py)
+#   * the hostnames the API and nginx expect (medwear-postgres, medwear-api, ...)
+#     are network aliases, so no other MEDWEAR stack on the node is touched
+services:
+  postgres:
+    image: docker.io/library/postgres:15-alpine
+    container_name: mwbench-postgres
+    restart: "no"
+    ports: !reset []
+    healthcheck: !reset {}
+    networks:
+      medwear-network:
+        aliases: [medwear-postgres]
+
+  influxdb:
+    image: docker.io/library/influxdb:2.7
+    container_name: mwbench-influxdb
+    restart: "no"
+    ports: !reset []
+    healthcheck: !reset {}
+    networks:
+      medwear-network:
+        aliases: [medwear-influxdb]
+
+  minio:
+    image: docker.io/minio/minio:latest
+    container_name: mwbench-minio
+    restart: "no"
+    ports: !reset []
+    healthcheck: !reset {}
+    networks:
+      medwear-network:
+        aliases: [medwear-minio]
+
+  minio-setup:
+    image: docker.io/minio/mc:latest
+    container_name: mwbench-minio-setup
+
+  keycloak:
+    image: docker.io/keycloak/keycloak:23.0
+    container_name: mwbench-keycloak
+    restart: "no"
+    # the core passes only selected variables to Keycloak
+    env_file:
+      - ${MEDWEAR_ENV_FILE}
+    environment:
+      # no heap limit, as benchmarked
+      - JAVA_OPTS_APPEND=
+    depends_on: !reset []
+    networks:
+      medwear-network:
+        aliases: [medwear-keycloak]
+
+  med-api:
+    image: localhost/mwbench-api:${MEDWEAR_SRC_REV}
+    container_name: mwbench-api
+    restart: "no"
+    environment:
+      # DB_POOL_SIZE is recorded but not read by MEDWEAR 49be39f (default pool);
+      # the pool actually used is read back inside the container
+      - DB_POOL_SIZE=${DB_POOL_SIZE}
+      - UVICORN_WORKERS=${UVICORN_WORKERS}
+      # per-user limit on POST /v1/data/batch; "300/minute" is the deployed default
+      - BATCH_RATE_LIMIT=${BATCH_RATE_LIMIT}
+    command: ["sh", "-c", "exec python -m uvicorn run_med_api:app --app-dir /app/medwear_med_api/scripts --host 0.0.0.0 --port 8080 --workers \"$$UVICORN_WORKERS\""]
+    # direct port for the per-hop latency comparison only (nginx+TLS vs API)
+    ports:
+      - "127.0.0.1:${MW_BENCH_API_PORT}:8080"
+    depends_on: !reset []
+    healthcheck: !reset {}
+    networks:
+      medwear-network:
+        aliases: [medwear-api, med-api]
+
+  frontend:
+    image: localhost/mwbench-frontend:${MEDWEAR_SRC_REV}
+    container_name: mwbench-frontend
+    restart: "no"
+    depends_on: !reset []
+    networks:
+      medwear-network:
+        aliases: [medwear-frontend]
+
+  medwear-nginx:
+    image: localhost/mwbench-nginx:${MEDWEAR_SRC_REV}
+    container_name: mwbench-nginx
+    restart: "no"
+    depends_on: !reset []
+    networks:
+      medwear-network:
+        aliases: [medwear-nginx]
+
+  keycloak-db-setup:
+    profiles: [disabled]
+  pgadmin:
+    profiles: [disabled]
+  grafana:
+    profiles: [disabled]
+  uptime-kuma:
+    profiles: [disabled]

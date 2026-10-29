@@ -1,4 +1,6 @@
 # Isolated MEDWEAR stack for benchmark jobs (compose project "mwbench").
+# Used for MEDWEAR trees without a core docker-compose.yml (49be39f, the commit
+# in the paper); newer trees use their core file plus medwear-bench.override.yml.
 # Created and destroyed inside each Slurm job by bench/lib/common.sh; the named
 # volumes are per job and only ever hold synthetic benchmark data.
 #

@@ -36,13 +36,20 @@ The scripts take the repository root as `BENCH` (the parent of `bench/`) and wri
 
 2. **Container configuration.** The jobs use `bench/lib/containers-bench.conf`, and image preparation uses `bench/lib/registries-bench.conf` (fully qualified image names, no short-name prompts in batch jobs). Rootless Podman must place containers in the job's cgroup, which every job checks (`cgroups_start.tsv`, `inside_job=yes`).
 
-3. **MEDWEAR source.** Export the benchmarked commit into `bench/medwear_src/<rev>/`, where `<rev>` is `MEDWEAR_SRC_REV` in the condition files:
+3. **MEDWEAR source.** Export the benchmarked commit into `bench/medwear_src/<rev>/`, where `<rev>` is `MEDWEAR_SRC_REV` in the condition files, and record it in a `VERSION` file:
    ```bash
+   rev=49be39f; M=/path/to/medwear
+   files="medwear_med_api docker/medwear-api.Dockerfile docker/nginx docker/medwear-realm.json frontend"
+   git -C $M cat-file -e $rev:docker-compose.yml 2>/dev/null && files="$files docker-compose.yml"
    mkdir -p bench/medwear_src
-   git -C /path/to/medwear archive --prefix=49be39f/ 49be39f \
-       medwear_med_api docker/medwear-api.Dockerfile docker/nginx docker/medwear-realm.json frontend \
-     | tar -x -C bench/medwear_src
+   git -C $M archive --prefix=$rev/ $rev $files | tar -x -C bench/medwear_src
+   { echo "commit=$(git -C $M rev-parse $rev)"
+     echo "commit_date=$(git -C $M show -s --format=%ci $rev)"
+     echo "subject=$(git -C $M show -s --format=%s $rev)"
+     echo "source=git archive of $files"
+     echo "exported=$(date -Is)"; } > bench/medwear_src/$rev/VERSION
    ```
+   The stack of a job is MEDWEAR's own `docker-compose.yml` merged with `bench/compose/medwear-bench.override.yml`, which holds only what a benchmark job changes (job-local names and ports, no restarts or health checks, the condition's API settings). Commits from before MEDWEAR had a core compose file, such as `49be39f`, use the self-contained `bench/compose/medwear-bench.yml` instead. `settings.json` records the files used (`compose_files`).
 
 4. **RADAR-Gateway source.** Check out the release used and apply the benchmark patch:
    ```bash

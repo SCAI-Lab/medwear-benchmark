@@ -280,6 +280,9 @@ def main():
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "platform": args.platform,
         "compose_project": args.project,
+        # relative to $BENCH: core file of the MEDWEAR tree + override, or the legacy file
+        "compose_files": [os.path.relpath(f, os.environ.get("BENCH", "/"))
+                          for f in os.environ.get("MW_COMPOSE_FILES", "").split()],
         "smoke": os.environ.get("SMOKE") == "1",
         "pilot": os.environ.get("BENCH_PILOT") == "1",
         "slurm": {k: os.environ.get(k) for k in ("SLURM_JOB_ID", "SLURM_JOB_NAME", "SLURM_JOB_NODELIST",

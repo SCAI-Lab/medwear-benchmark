@@ -33,7 +33,10 @@ PODMAN_COMPOSE="${PODMAN_COMPOSE:-podman-compose}"
 
 MW_PROJECT=mwbench
 RD_PROJECT=rdbench
-MW_COMPOSE="$BENCH/bench/compose/medwear-bench.yml"
+# MEDWEAR trees with a core docker-compose.yml: that file plus this override;
+# older trees (e.g. 49be39f, the paper): the self-contained medwear-bench.yml
+MW_COMPOSE_OVERRIDE="$BENCH/bench/compose/medwear-bench.override.yml"
+MW_COMPOSE_LEGACY="$BENCH/bench/compose/medwear-bench.yml"
 MW_ENV_FILE="$BENCH/bench/.env.medwear-bench"
 RD_DIR="$BENCH/radar/RADAR-Gateway"
 RD_OVERRIDE="$BENCH/bench/compose/radar-bench.override.yml"
@@ -41,6 +44,11 @@ export MW_BENCH_PORT="${MW_BENCH_PORT:-19080}"
 export MW_BENCH_KC_PORT="${MW_BENCH_KC_PORT:-18180}"
 export MW_BENCH_TLS_PORT="${MW_BENCH_TLS_PORT:-19443}"
 export MW_BENCH_API_PORT="${MW_BENCH_API_PORT:-19081}"
+# settings of the core compose file
+export MEDWEAR_ENV_FILE="$MW_ENV_FILE"
+export MEDWEAR_HTTP_PORT="127.0.0.1:$MW_BENCH_PORT"
+export MEDWEAR_HTTPS_PORT="127.0.0.1:$MW_BENCH_TLS_PORT"
+export MEDWEAR_KEYCLOAK_PORT="127.0.0.1:$MW_BENCH_KC_PORT"
 
 PREFLIGHT_N="${PREFLIGHT_N:-20}"
 PREFLIGHT_MAX_MS="${PREFLIGHT_MAX_MS:-100}"
@@ -157,6 +165,11 @@ bench_init() {
         [ -f "$MW_ENV_FILE" ] || fail "missing $MW_ENV_FILE (create it with bench/make_bench_env.sh)"
         export MEDWEAR_SRC="$BENCH/bench/medwear_src/$MEDWEAR_SRC_REV"
         [ -f "$MEDWEAR_SRC/VERSION" ] || fail "MEDWEAR source $MEDWEAR_SRC (MEDWEAR_SRC_REV=$MEDWEAR_SRC_REV) missing or without VERSION"
+        if [ -f "$MEDWEAR_SRC/docker-compose.yml" ]; then
+            export MW_COMPOSE_FILES="$MEDWEAR_SRC/docker-compose.yml $MW_COMPOSE_OVERRIDE"
+        else
+            export MW_COMPOSE_FILES="$MW_COMPOSE_LEGACY"
+        fi
     else
         [[ "$RADAR_TOPIC" =~ ^bench_[a-z0-9_]+$ ]] || fail "RADAR_TOPIC must start with bench_ (got '$RADAR_TOPIC')"
     fi
@@ -225,7 +238,13 @@ ctr() {
         --filter "label=com.docker.compose.service=$1" --format '{{.Names}}' | head -1
 }
 
-mw_compose() { "$PODMAN_COMPOSE" -p "$MW_PROJECT" -f "$MW_COMPOSE" "$@"; }
+mw_compose() {
+    if [ "$MW_COMPOSE_FILES" = "$MW_COMPOSE_LEGACY" ]; then
+        "$PODMAN_COMPOSE" -p "$MW_PROJECT" -f "$MW_COMPOSE_LEGACY" "$@"
+    else
+        "$PODMAN_COMPOSE" -p "$MW_PROJECT" -f "$MEDWEAR_SRC/docker-compose.yml" -f "$MW_COMPOSE_OVERRIDE" --env-file "$MW_ENV_FILE" "$@"
+    fi
+}
 rd_compose() { (cd "$RD_DIR" && "$PODMAN_COMPOSE" -p "$RD_PROJECT" --env-file .env -f docker-compose.yml -f "$RD_OVERRIDE" "$@"); }
 
 log_podman_ps() {   # phase
