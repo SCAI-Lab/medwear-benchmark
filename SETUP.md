@@ -12,7 +12,7 @@ How the benchmark was set up for the paper campaign, and how to reproduce it. Bo
 | Scheduler | Slurm 22.05 |
 | Containers | rootless Podman 5.8.2 (crun, overlay), podman-compose 1.6.0 |
 | Client | Python 3.9.21, requests 2.32.5, Locust 2.31.8, on the same node, over 127.0.0.1 |
-| MEDWEAR | commit `49be39f` (first campaign: tag [`paper-v2`](https://github.com/SCAI-Lab/medwear/tree/paper-v2), `a8a666b`); PostgreSQL 15 (alpine), InfluxDB 2.7, Keycloak 23.0, MinIO, nginx; one uvicorn worker, SQLAlchemy pool 5 + 10 |
+| MEDWEAR | commit `49be39f`, published as tag [`paper-2026-10`](https://github.com/SCAI-Lab/medwear/tree/paper-2026-10) (the first campaign ran MEDWEAR `a8a666b`, whose results are not reported); PostgreSQL 15 (alpine), InfluxDB 2.7, Keycloak 23.0, MinIO, nginx; one uvicorn worker, SQLAlchemy pool 5 + 10 |
 | RADAR-base | [RADAR-Gateway](https://github.com/RADAR-base/RADAR-Gateway) `cd0c6df` (release 0.9.4) with `bench/radar/RADAR-Gateway-cd0c6df.patch`; ManagementPortal 2.0.0; Confluent Platform 7.6.0 (one Kafka broker, replication factor 1, three-partition topic, ZooKeeper, Schema Registry) |
 
 MEDWEAR is reached through its nginx proxy over HTTPS and RADAR-base at its gateway over HTTP, as each is deployed.
