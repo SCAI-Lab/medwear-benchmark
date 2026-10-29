@@ -16,7 +16,7 @@ Both platforms run as deployed, one at a time, on a freshly created stack per jo
 
 | | Version |
 |---|---|
-| MEDWEAR | commit `49be39f` (two-phase ingest, stream metadata registered once per session) |
+| MEDWEAR | commit `49be39f`, published as tag [`paper-2026-10`](https://github.com/SCAI-Lab/medwear/tree/paper-2026-10) (two-phase ingest, stream metadata registered once per session) |
 | RADAR-base | RADAR-Gateway `cd0c6df` (release 0.9.4) with `bench/radar/RADAR-Gateway-cd0c6df.patch`, ManagementPortal 2.0.0, Confluent Platform 7.6.0 |
 | Client | Python 3.9, requests 2.32.5, Locust 2.31.8 |
 | Runtime | rootless Podman 5.8.2, podman-compose 1.6.0, Slurm 22.05, one exclusively allocated node (AMD EPYC 9555P) |
