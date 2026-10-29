@@ -36,16 +36,17 @@ The scripts take the repository root as `BENCH` (the parent of `bench/`) and wri
 
 2. **Container configuration.** The jobs use `bench/lib/containers-bench.conf`, and image preparation uses `bench/lib/registries-bench.conf` (fully qualified image names, no short-name prompts in batch jobs). Rootless Podman must place containers in the job's cgroup, which every job checks (`cgroups_start.tsv`, `inside_job=yes`).
 
-3. **MEDWEAR source.** Export the benchmarked commit into `bench/medwear_src/<rev>/`, where `<rev>` is `MEDWEAR_SRC_REV` in the condition files, and record it in a `VERSION` file:
+3. **MEDWEAR source.** Export the benchmarked MEDWEAR into `bench/medwear_src/<rev>/`, where `<rev>` is `MEDWEAR_SRC_REV` in the condition files, and record it in a `VERSION` file. The paper's conditions use `MEDWEAR_SRC_REV=49be39f`, the commit of the development repository; its code is the tag `paper-2026-10` of [SCAI-Lab/medwear](https://github.com/SCAI-Lab/medwear):
    ```bash
-   rev=49be39f; M=/path/to/medwear
+   rev=49be39f; ref=paper-2026-10; M=/path/to/medwear   # newer revisions: rev=ref=<commit>
    files="medwear_med_api docker/medwear-api.Dockerfile docker/nginx docker/medwear-realm.json frontend"
-   git -C $M cat-file -e $rev:docker-compose.yml 2>/dev/null && files="$files docker-compose.yml"
+   git -C $M cat-file -e $ref:docker-compose.yml 2>/dev/null && files="$files docker-compose.yml"
    mkdir -p bench/medwear_src
-   git -C $M archive --prefix=$rev/ $rev $files | tar -x -C bench/medwear_src
-   { echo "commit=$(git -C $M rev-parse $rev)"
-     echo "commit_date=$(git -C $M show -s --format=%ci $rev)"
-     echo "subject=$(git -C $M show -s --format=%s $rev)"
+   git -C $M archive --prefix=$rev/ $ref $files | tar -x -C bench/medwear_src
+   { echo "commit=$(git -C $M rev-parse $ref^{commit})"
+     echo "ref=$ref"
+     echo "commit_date=$(git -C $M show -s --format=%ci $ref)"
+     echo "subject=$(git -C $M show -s --format=%s $ref)"
      echo "source=git archive of $files"
      echo "exported=$(date -Is)"; } > bench/medwear_src/$rev/VERSION
    ```
