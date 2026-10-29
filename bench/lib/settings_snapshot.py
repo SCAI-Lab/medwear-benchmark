@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 settings.json: the configuration that was actually used, read from the running
-stack. Replaces the round-3 snapshot, which recorded nothing for MEDWEAR and
-filled missing variables with defaults (WRITES_ONLY "1", timeouts "60").
+stack.
 
   settings_snapshot.py --platform medwear --project mwbench \
       --required "WRITES_ONLY BATCH_TIMEOUT ..." --record "USERS STAGE_SECONDS ..." \

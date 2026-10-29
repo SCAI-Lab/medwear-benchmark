@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Acceptance checks for a smoke run (SMOKE=1), from the round-3 review:
+Acceptance checks for a smoke run (SMOKE=1):
   1 settings.json has real values (no unset experiment variables), container
     versions and image digests, and (MEDWEAR) pool size / workers read from
     inside the API container

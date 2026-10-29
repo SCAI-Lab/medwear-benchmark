@@ -7,10 +7,11 @@ run.env
 # MEDWEAR source exported per revision (see README)
 bench/medwear_src/
 
-# run outputs, except the campaign manifests and the paper's tables
+# run outputs, except the campaign manifests, the analysis, and the paper's tables
 results/*
 !results/campaigns/
 !results/paper/
+!results/analysis/
 
 __pycache__/
 *.pyc

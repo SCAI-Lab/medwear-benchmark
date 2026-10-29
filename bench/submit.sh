@@ -1,7 +1,7 @@
 #!/bin/bash
 # Submit one benchmark job.
 #   bench/submit.sh <job> <condition.env> [extra sbatch args...]
-#   bench/submit.sh smoke conditions/smoke_medwear.env
+#   bench/submit.sh smoke conditions/smoke_medwear_sessions.env
 #   BENCH_AFTER=<jobid> bench/submit.sh ...      # also wait for that job (campaign order)
 #   BENCH_PILOT=1 bench/submit.sh ...            # pilot run: labelled, excluded from the analysis
 # <job>: latency load durability validation idempotency baseline smoke prepare_images

@@ -3,7 +3,7 @@
 # users' work is allowed and recorded by the jobs), then wait for
 # them and print their summaries. Run with nohup on the node; checks once a
 # minute (squeue + podman ps only), gives up after MAX_WAIT_S.
-#   nohup bench/release_when_clear.sh 13617,13618 > results/release_<ids>.log 2>&1 &
+#   nohup bench/release_when_clear.sh <jobid>,<jobid> > results/release_<ids>.log 2>&1 &
 set -uo pipefail
 BENCH="${BENCH:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$BENCH" || exit 1

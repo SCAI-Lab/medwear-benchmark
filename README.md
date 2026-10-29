@@ -1,6 +1,6 @@
 # medwear-benchmark
 
-Benchmark harness used to compare [MEDWEAR](https://github.com/SCAI-Lab/medwear) with [RADAR-base](https://radar-base.org) in *Connected but Late: Sample Age of Commercial BLE Wearables under Wi-Fi Coexistence* (Supplementary Section "Platform Benchmark Against RADAR-base").
+Benchmark harness used to compare [MEDWEAR](https://github.com/SCAI-Lab/medwear) with [RADAR-base](https://radar-base.org) in *Connected but Late: Sample Age of Commercial BLE Wearables under Wi-Fi Coexistence for Real-Time Clinical Applications* (Supplementary Section "Platform Benchmark Against RADAR-base").
 
 Both platforms run as deployed, one at a time, on a freshly created stack per job, and the same client drives both. Every test counts the samples sent, acknowledged, and stored (PostgreSQL and InfluxDB, or Kafka).
 
@@ -41,6 +41,7 @@ bench/
   analysis/paper_tables.py      the paper's latency, validation, and load tables from the run folders
   EXCLUSION_RULES.md            rules fixed before the campaign
 results/campaigns/              manifests of the two campaigns
+results/analysis/               per-run and aggregated metrics (output of summarize.py): radar_round4/ (the RADAR-base jobs of paper_round4), medwear_round5/
 results/paper/                  latency, validation, and load tables of the paper (CSV + README)
 ```
 
@@ -55,7 +56,7 @@ Each manifest lists the job order and the hashes of the plan and of `bench/EXCLU
 
 ## Results
 
-The latency, validation, and load tables of the paper, with notes on delivery and fault recovery, are in [results/paper](results/paper/README.md).
+The latency, validation, and load tables of the paper, with notes on delivery and fault recovery, are in [results/paper](results/paper/README.md). Per-run and aggregated metrics of every test, with the pre-registered exclusion rules applied (no run was excluded), are in `results/analysis/radar_round4/` (the 16 RADAR-base jobs of `paper_round4`) and `results/analysis/medwear_round5/` (`runs.csv`, `aggregate.csv`, `exclusions.csv`, `options.json`), as written by `bench/analysis/summarize.py`. The run folders themselves are not part of this repository; they contain only synthetic benchmark traffic, counts, and timings.
 
 ## Known limitations
 
@@ -63,7 +64,7 @@ The load generator runs on the same node as the platform under test, and all sim
 
 ## Citation
 
-If you use this harness, please cite the paper (see [CITATION.cff](CITATION.cff)).
+If you use this harness, please cite the paper: M. Perez-Serrano, H. Z. Özer, S. J. Paek, D. Paez-Granados, *Connected but Late: Sample Age of Commercial BLE Wearables under Wi-Fi Coexistence for Real-Time Clinical Applications*, submitted to IEEE Journal of Biomedical and Health Informatics, 2026 (see [CITATION.cff](CITATION.cff)).
 
 ## License
 

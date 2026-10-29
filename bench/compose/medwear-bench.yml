@@ -112,7 +112,7 @@ services:
     environment:
       - PYTHONPATH=/app
       - LOG_LEVEL=INFO
-      # DB_POOL_SIZE is recorded but not read by MEDWEAR a8a666b (default pool);
+      # DB_POOL_SIZE is recorded but not read by MEDWEAR 49be39f (default pool);
       # the pool actually used is read back inside the container
       - DB_POOL_SIZE=${DB_POOL_SIZE}
       - UVICORN_WORKERS=${UVICORN_WORKERS}

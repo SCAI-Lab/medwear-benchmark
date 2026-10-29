@@ -7,7 +7,7 @@
 # inside a Slurm allocation (no compute outside Slurm), through BENCH_PROXY if set;
 # CPU/memory from the condition file passed to submit.sh;
 # benchmark jobs themselves never pull.
-#   bench/submit.sh prepare_images conditions/smoke_medwear.env
+#   bench/submit.sh prepare_images conditions/smoke_medwear_sessions.env
 set -euo pipefail
 BENCH="${BENCH:-$HOME/benchmark}"
 [ -f "$BENCH/bench/site.env" ] && { set -a; source "$BENCH/bench/site.env"; set +a; }

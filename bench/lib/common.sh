@@ -10,7 +10,7 @@
 #   ...test...
 #   bench_finish
 #
-# Design rules (from the round-3 review):
+# Design rules:
 #   * the platform stack is created inside the Slurm job (podman, cgroupfs) and
 #     destroyed at the end; volumes are per-job and hold only synthetic data
 #   * jobs run with the CPU/memory allocation of the condition (BENCH_CPUS /
@@ -182,8 +182,8 @@ bench_init() {
     unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
     export NO_PROXY="127.0.0.1,localhost" no_proxy="127.0.0.1,localhost"
 
-    # Rootless podman defaults to the systemd cgroup manager, which put every
-    # round-3 container under user@<uid>.service, outside the job allocation.
+    # Rootless podman defaults to the systemd cgroup manager, which puts the
+    # containers under user@<uid>.service, outside the job allocation.
     export CONTAINERS_CONF_OVERRIDE="$BENCH_LIB/containers-bench.conf"
 
     export BENCH_JOB_START_EPOCH; BENCH_JOB_START_EPOCH=$(date +%s)
